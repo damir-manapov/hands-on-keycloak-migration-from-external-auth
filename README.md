@@ -21,7 +21,7 @@ This sandbox demonstrates how to bridge a legacy username/password authenticator
 - Yarn 1.x
 - Docker with Compose V2 (`docker compose` CLI)
 - For the Java SPI (optional): JDK 21+, Maven 3.9+ (`sudo apt-get update && sudo apt-get install -y openjdk-21-jdk maven` on Debian/Ubuntu)
-- Optional Java linting: Checkstyle (`sudo apt-get install checkstyle`), SpotBugs (runs via Maven), and Error Prone (pulled automatically via Maven) if you plan to run `mvn clean verify` inside `keycloak-providers/legacy-user-storage`.
+- Optional Java linting: SpotBugs (runs via Maven), Error Prone (pulled automatically via Maven), and Google Java Format (enforced via Maven) if you plan to run `mvn clean verify` inside `keycloak-providers/legacy-user-storage`.
 
 ## Getting Started
 
