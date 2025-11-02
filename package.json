@@ -15,11 +15,13 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --project tsconfig.typecheck.json",
     "load:users": "tsx src/commands/loadUsers.ts",
+    "list:users": "tsx src/commands/listKeycloakUsers.ts",
     "check": "./check.sh",
     "compose:up": "docker compose -f compose/docker-compose.yml up -d starter",
     "compose:down": "docker compose -f compose/docker-compose.yml down",
     "compose:logs": "docker compose -f compose/docker-compose.yml logs -f",
-    "compose:reset": "docker compose -f compose/docker-compose.yml down -v --remove-orphans"
+    "compose:reset": "docker compose -f compose/docker-compose.yml down -v --remove-orphans",
+    "compose:restart": "yarn compose:down && yarn compose:up"
   },
   "dependencies": {
     "axios": "^1.13.1",

@@ -10,11 +10,17 @@ This sandbox demonstrates how to bridge a legacy username/password authenticator
 
 > **Note:** For local experimentation the sample realm seeds `test-user / password` in both systems so the flows work out of the box. In a real migration you would call the Keycloak Admin API (or a custom SPI) to update the password only after the legacy system verifies the user.
 
+## TODO
+
+* Create maven package with legacy provider
+* Create npm package with migration scripts and dummy legacy facade
+
 ## Prerequisites
 
 - Node.js 18+
 - Yarn 1.x
 - Docker with Compose V2 (`docker compose` CLI)
+- For the Java SPI (optional): JDK 21+, Maven 3.9+ (`sudo apt-get update && sudo apt-get install -y openjdk-21-jdk maven` on Debian/Ubuntu)
 
 ## Getting Started
 
@@ -74,13 +80,29 @@ scripts/keycloak-login.sh test-user password
 
 Override defaults with `KEYCLOAK_URL`, `KEYCLOAK_REALM`, or `KEYCLOAK_CLIENT_ID` when needed.
 
+### List Keycloak Users via CLI
+
+Inspect users provisioned in the realm without opening the admin console:
+
+```bash
+yarn list:users
+```
+
+Optional environment variables:
+
+- `KEYCLOAK_USER_SEARCH` – filter by username/email
+- `KEYCLOAK_USER_LIMIT` – limit the number of returned users
+- `KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_ADMIN_USER`, `KEYCLOAK_ADMIN_PASSWORD`, `KEYCLOAK_ADMIN_CLIENT_ID`, `KEYCLOAK_ADMIN_REALM` – override defaults
+
 ### Bulk User Import (without passwords)
 
-The command `yarn load:users` calls `src/commands/loadUsers.ts`, which pulls user profiles from the legacy facade (`/users`) and recreates them in Keycloak via the admin REST API, preserving emails and storing legacy roles as attributes. Defaults assume:
+The command `yarn load:users` calls `src/commands/loadUsers.ts`, which pulls user profiles from the legacy facade (`/users`) and pre-creates federated identities in Keycloak via the admin REST API, preserving emails and storing legacy roles as attributes. Defaults assume:
 
 - legacy facade: `http://localhost:4000/users`
 - admin credentials: `admin / admin`
 - target realm: `research`
+
+> Imported users keep their `federationLink` pointing at the legacy provider, so the first login will still delegate password validation to the legacy service. Once your SPI stores a password locally (or you detach the federation link), subsequent logins remain in Keycloak.
 
 Example workflow:
 
@@ -92,7 +114,28 @@ yarn load:users
 
 Override behavior with env vars such as `LEGACY_URL`, `KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_ADMIN_USER`, or `KEYCLOAK_ADMIN_PASSWORD` before running the command.
 
+- Set `KEYCLOAK_LEGACY_PROVIDER_ID` if your legacy user storage component uses a different id than the default `legacy-user-storage`.
+
 After startup, Keycloak is available at `http://localhost:8080` with admin credentials `admin / admin`. The imported `research` realm contains the `research-migration-from-legacy` public client and the `test-user / password` account.
+
+### Custom User Storage Provider
+
+A companion Java SPI lives in `keycloak-providers/legacy-user-storage`. It lets Keycloak call the legacy facade during authentication.
+
+Build and copy the provider JAR:
+
+```bash
+mvn -f keycloak-providers/legacy-user-storage/pom.xml package
+cp keycloak-providers/legacy-user-storage/target/legacy-user-storage-provider-0.1.0-SNAPSHOT.jar compose/providers/legacy-user-storage-provider.jar
+```
+
+Restart Keycloak (`yarn compose:restart`). Then, in the admin console:
+
+1. Go to **User Federation → Add provider → legacy-user-storage**.
+2. Set **Legacy facade base URL** if the default (`http://legacy-auth:4000/`) differs in your environment.
+3. Save and test a login for a migrated user.
+
+Keycloak now queries the legacy facade for user details and validates passwords via `/login` before falling back to local credentials.
 
 ## End-to-End Tests
 

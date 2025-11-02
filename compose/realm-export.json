@@ -33,5 +33,25 @@
       "redirectUris": ["http://localhost:4000/*"],
       "webOrigins": ["*"]
     }
-  ]
+  ],
+  "components": {
+    "org.keycloak.storage.UserStorageProvider": [
+      {
+        "id": "legacy-user-storage",
+        "name": "Legacy User Storage",
+        "providerId": "legacy-user-storage",
+        "config": {
+          "priority": ["0"],
+          "cachePolicy": ["DEFAULT"],
+          "batchSizeForSync": ["1000"],
+          "maxLifespan": ["-1"],
+          "evictionHour": ["0"],
+          "evictionMinute": ["0"],
+          "evictionDay": [""],
+          "importEnabled": ["true"],
+          "legacyBaseUrl": ["http://host.docker.internal:4000/"]
+        }
+      }
+    ]
+  }
 }

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
 # ./scripts/keycloak-login.sh test-user password
+# ./scripts/keycloak-login.sh analyst-mila m1l@2024
+
+# curl -s -o - -w "%{http_code}\n" -H "Content-Type: application/json" -d '{"username":"analyst-mila","password":"m1l@2024"}' http://localhost:4000/login
 
 set -euo pipefail
 

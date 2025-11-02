@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import crypto from "crypto";
 import type { Server } from "http";
 import {
@@ -29,6 +29,23 @@ export function createApp() {
   const app = express();
 
   app.use(express.json());
+
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const startedAt = Date.now();
+    const correlationId = crypto.randomBytes(8).toString("hex");
+    console.log(
+      `[${new Date(startedAt).toISOString()}] [${correlationId}] ${req.method} ${req.originalUrl}`
+    );
+
+    res.once("finish", () => {
+      const duration = Date.now() - startedAt;
+      console.log(
+        `[${new Date().toISOString()}] [${correlationId}] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${duration}ms)`
+      );
+    });
+
+    next();
+  });
 
   app.get("/health", (_req: Request, res: Response) => {
     res.json({ status: "ok" });

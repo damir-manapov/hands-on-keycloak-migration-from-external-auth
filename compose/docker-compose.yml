@@ -8,8 +8,11 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HEALTH_ENABLED: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ./providers/legacy-user-storage-provider.jar:/opt/keycloak/providers/legacy-user-storage-provider.jar:ro
     healthcheck:
       test:
         - CMD-SHELL
