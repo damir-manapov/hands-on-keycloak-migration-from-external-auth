@@ -54,6 +54,9 @@ yarn compose:logs
 
 # stop and remove containers
 yarn compose:down
+
+# drop all Keycloak data (volumes) and remove orphan containers
+yarn compose:reset
 ```
 
 After startup, Keycloak is available at `http://localhost:8080` with admin credentials `admin / admin`. The imported `research` realm contains the `research-rest-client` public client and the `test-user / password` account.
