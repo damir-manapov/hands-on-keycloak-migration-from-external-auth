@@ -23,7 +23,7 @@
   ],
   "clients": [
     {
-      "clientId": "research-rest-client",
+      "clientId": "research-migration-from-legacy",
       "enabled": true,
       "publicClient": true,
       "directAccessGrantsEnabled": true,

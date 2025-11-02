@@ -4,11 +4,12 @@ import type { Server } from "http";
 import type { AddressInfo } from "net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startServer } from "../../src/server";
-import type { AuthSuccessResponse, PublicUserProfile } from "../../src/server";
+import type { AuthErrorResponse, AuthSuccessResponse } from "../../src/server";
+import type { PublicUserProfile } from "../../src/users";
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL ?? "http://localhost:8080";
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM ?? "research";
-const KEYCLOAK_CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID ?? "research-rest-client";
+const KEYCLOAK_CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID ?? "research-migration-from-legacy";
 const KEYCLOAK_USERNAME = process.env.KEYCLOAK_USERNAME ?? "test-user";
 const KEYCLOAK_PASSWORD = process.env.KEYCLOAK_PASSWORD ?? "password";
 
@@ -38,6 +39,52 @@ afterAll(async () => {
   });
 });
 
+function expectAxiosError<T>(error: unknown): asserts error is AxiosError<T> {
+  if (!axios.isAxiosError<T>(error)) {
+    throw error;
+  }
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
+
+const isStringArray = (value: unknown): value is string[] => {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+};
+
+function isPublicUserProfile(value: unknown): value is PublicUserProfile {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const username = value.username;
+  const displayName = value.displayName;
+  const email = value.email;
+  const roles = value.roles;
+  const lastLoginAt = value.lastLoginAt;
+
+  return (
+    typeof username === "string" &&
+    typeof displayName === "string" &&
+    typeof email === "string" &&
+    isStringArray(roles) &&
+    (lastLoginAt === undefined || typeof lastLoginAt === "string")
+  );
+}
+
+function assertPublicUserProfiles(value: unknown): asserts value is PublicUserProfile[] {
+  if (!Array.isArray(value)) {
+    throw new TypeError("Expected an array of PublicUserProfile objects");
+  }
+
+  for (const entry of value) {
+    if (!isPublicUserProfile(entry)) {
+      throw new TypeError("Expected an array of PublicUserProfile objects");
+    }
+  }
+}
+
 describe("User export APIs", () => {
   it("exports user profiles without passwords for migration", async () => {
     await axios.post<AuthSuccessResponse>(`${baseUrl}/login`, {
@@ -45,10 +92,13 @@ describe("User export APIs", () => {
       password: "password",
     });
 
-    const response = await axios.get<PublicUserProfile[]>(`${baseUrl}/users`);
+    const response: AxiosResponse<PublicUserProfile[]> = await axios.get(`${baseUrl}/users`);
 
     expect(response.status).toBe(200);
-    const usernames = response.data.map((user) => user.username);
+    const profilesUnknown = response.data;
+    assertPublicUserProfiles(profilesUnknown);
+    const profiles = profilesUnknown;
+    const usernames = profiles.map((user) => user.username);
     expect(usernames).toEqual(
       expect.arrayContaining([
         "test-user",
@@ -59,31 +109,42 @@ describe("User export APIs", () => {
       ])
     );
 
-    const testUserProfile = response.data.find((user) => user.username === "test-user");
-    expect(testUserProfile).toBeDefined();
+    const testUserProfile = profiles.find((user) => user.username === "test-user");
+    if (!testUserProfile) {
+      throw new Error("Expected test-user to be present in legacy export");
+    }
     expect(testUserProfile).not.toHaveProperty("password");
-    expect(testUserProfile?.lastLoginAt).toBeDefined();
+    expect(testUserProfile.lastLoginAt).toBeDefined();
   });
 
   it("provides individual user snapshots without passwords", async () => {
-    const response = await axios.get<PublicUserProfile>(`${baseUrl}/users/legacy-admin`);
+    const response: AxiosResponse<PublicUserProfile> = await axios.get(
+      `${baseUrl}/users/legacy-admin`
+    );
 
     expect(response.status).toBe(200);
-    expect(response.data.username).toBe("legacy-admin");
-    expect(response.data.roles).toEqual(["admin"]);
-    expect(response.data).not.toHaveProperty("password");
+    const profileUnknown = response.data;
+    if (!isPublicUserProfile(profileUnknown)) {
+      throw new TypeError("Expected a public user profile");
+    }
+    const profile = profileUnknown;
+    expect(profile.username).toBe("legacy-admin");
+    expect(profile.roles).toEqual(["admin"]);
+    expect(profile).not.toHaveProperty("password");
   });
 
   it("returns 404 when exporting an unknown user", async () => {
-    await expect(axios.get(`${baseUrl}/users/unknown-person`)).rejects.toMatchObject({
-      response: {
-        status: 404,
-        data: {
-          status: "error",
-          message: "user not found",
-        },
-      },
-    });
+    try {
+      await axios.get<PublicUserProfile>(`${baseUrl}/users/unknown-person`);
+      throw new Error("Expected request to fail");
+    } catch (error) {
+      expectAxiosError<AuthErrorResponse>(error);
+      expect(error.response?.status).toBe(404);
+      expect(error.response?.data).toMatchObject({
+        status: "error",
+        message: "user not found",
+      });
+    }
   });
 });
 

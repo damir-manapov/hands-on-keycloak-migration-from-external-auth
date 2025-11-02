@@ -13,6 +13,8 @@
     "lint:fix": "yarn lint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "typecheck": "tsc --project tsconfig.typecheck.json",
+    "load:users": "tsx src/commands/loadUsers.ts",
     "check": "./check.sh",
     "compose:up": "docker compose -f compose/docker-compose.yml up -d starter",
     "compose:down": "docker compose -f compose/docker-compose.yml down",

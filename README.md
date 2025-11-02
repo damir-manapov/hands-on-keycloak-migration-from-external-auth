@@ -63,7 +63,36 @@ yarn compose:reset
 
 The lightweight `starter` helper service waits until Keycloak's discovery endpoint responds before exiting, so `yarn compose:up` targets it to ensure the IdP is ready for tests and tooling.
 
-After startup, Keycloak is available at `http://localhost:8080` with admin credentials `admin / admin`. The imported `research` realm contains the `research-rest-client` public client and the `test-user / password` account.
+### CLI Login Helper
+
+Use the bundled `scripts/keycloak-login.sh` to obtain tokens via the password grant:
+
+```bash
+yarn compose:up
+scripts/keycloak-login.sh test-user password
+```
+
+Override defaults with `KEYCLOAK_URL`, `KEYCLOAK_REALM`, or `KEYCLOAK_CLIENT_ID` when needed.
+
+### Bulk User Import (without passwords)
+
+The command `yarn load:users` calls `src/commands/loadUsers.ts`, which pulls user profiles from the legacy facade (`/users`) and recreates them in Keycloak via the admin REST API, preserving emails and storing legacy roles as attributes. Defaults assume:
+
+- legacy facade: `http://localhost:4000/users`
+- admin credentials: `admin / admin`
+- target realm: `research`
+
+Example workflow:
+
+```bash
+yarn compose:up
+yarn dev  # in a separate terminal
+yarn load:users
+```
+
+Override behavior with env vars such as `LEGACY_URL`, `KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_ADMIN_USER`, or `KEYCLOAK_ADMIN_PASSWORD` before running the command.
+
+After startup, Keycloak is available at `http://localhost:8080` with admin credentials `admin / admin`. The imported `research` realm contains the `research-migration-from-legacy` public client and the `test-user / password` account.
 
 ## End-to-End Tests
 
@@ -95,6 +124,7 @@ Run static analysis:
 
 ```bash
 yarn lint
+yarn typecheck
 ```
 
 Automatically apply ESLint fixes:
