@@ -20,4 +20,7 @@ yarn audit
 echo "▶ Checking for outdated dependencies"
 yarn outdated
 
+echo "▶ Running Java SPI verification"
+mvn -f keycloak-providers/legacy-user-storage/pom.xml clean verify
+
 echo "✅ All checks completed"

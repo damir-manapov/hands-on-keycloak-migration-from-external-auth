@@ -118,7 +118,7 @@ async function main() {
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status ?? "unknown";
-      const detail = error.response?.data ?? error.message;
+      const detail: unknown = error.response?.data ?? error.message;
       log.error(`Request to Keycloak failed (status ${status})`, detail);
     } else if (error instanceof Error) {
       log.error(error.message);

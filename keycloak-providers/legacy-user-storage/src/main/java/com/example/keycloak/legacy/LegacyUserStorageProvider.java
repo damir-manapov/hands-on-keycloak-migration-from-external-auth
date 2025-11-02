@@ -130,10 +130,12 @@ public class LegacyUserStorageProvider
     String username = representation.getUsername();
     UserModel local = session.users().getUserByUsername(realm, username);
 
-    if (local == null || !StorageId.isLocalStorage(local)) {
+    if (local == null) {
       local = session.users().addUser(realm, username);
       local.setCreatedTimestamp(System.currentTimeMillis());
       LOGGER.infof("Imported legacy user %s into local storage", username);
+    } else if (local.getFederationLink() != null) {
+      LOGGER.infof("Converting federated user %s into local storage", username);
     } else {
       LOGGER.debugf("Updating existing imported user %s", username);
     }

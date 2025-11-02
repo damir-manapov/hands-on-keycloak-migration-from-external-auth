@@ -12,8 +12,8 @@ This sandbox demonstrates how to bridge a legacy username/password authenticator
 
 ## TODO
 
-* Create maven package with legacy provider
-* Create npm package with migration scripts and dummy legacy facade
+- Create maven package with legacy provider
+- Create npm package with migration scripts and dummy legacy facade
 
 ## Prerequisites
 
