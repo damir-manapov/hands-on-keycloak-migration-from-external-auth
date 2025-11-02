@@ -61,6 +61,8 @@ yarn compose:down
 yarn compose:reset
 ```
 
+The lightweight `starter` helper service waits until Keycloak's discovery endpoint responds before exiting, so `yarn compose:up` targets it to ensure the IdP is ready for tests and tooling.
+
 After startup, Keycloak is available at `http://localhost:8080` with admin credentials `admin / admin`. The imported `research` realm contains the `research-rest-client` public client and the `test-user / password` account.
 
 ## End-to-End Tests

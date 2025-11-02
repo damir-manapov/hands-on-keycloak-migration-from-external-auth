@@ -14,7 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "./check.sh",
-    "compose:up": "docker compose -f compose/docker-compose.yml up -d",
+    "compose:up": "docker compose -f compose/docker-compose.yml up -d starter",
     "compose:down": "docker compose -f compose/docker-compose.yml down",
     "compose:logs": "docker compose -f compose/docker-compose.yml logs -f",
     "compose:reset": "docker compose -f compose/docker-compose.yml down -v --remove-orphans"

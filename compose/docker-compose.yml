@@ -10,3 +10,18 @@ services:
       KC_HEALTH_ENABLED: "true"
     volumes:
       - ./realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 10s
+  starter:
+    image: alpine:3.20.3
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - echo "Keycloak is healthy and ready for migration tests."
