@@ -4,7 +4,7 @@ import type { Server } from "http";
 import type { AddressInfo } from "net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startServer } from "../../src/server";
-import type { AuthSuccessResponse } from "../../src/server";
+import type { AuthSuccessResponse, PublicUserProfile } from "../../src/server";
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL ?? "http://localhost:8080";
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM ?? "research";
@@ -34,6 +34,55 @@ afterAll(async () => {
       } else {
         resolve();
       }
+    });
+  });
+});
+
+describe("User export APIs", () => {
+  it("exports user profiles without passwords for migration", async () => {
+    await axios.post<AuthSuccessResponse>(`${baseUrl}/login`, {
+      username: "test-user",
+      password: "password",
+    });
+
+    const response = await axios.get<PublicUserProfile[]>(`${baseUrl}/users`);
+
+    expect(response.status).toBe(200);
+    const usernames = response.data.map((user) => user.username);
+    expect(usernames).toEqual(
+      expect.arrayContaining([
+        "test-user",
+        "api-reader",
+        "analyst-mila",
+        "ops-noah",
+        "legacy-admin",
+      ])
+    );
+
+    const testUserProfile = response.data.find((user) => user.username === "test-user");
+    expect(testUserProfile).toBeDefined();
+    expect(testUserProfile).not.toHaveProperty("password");
+    expect(testUserProfile?.lastLoginAt).toBeDefined();
+  });
+
+  it("provides individual user snapshots without passwords", async () => {
+    const response = await axios.get<PublicUserProfile>(`${baseUrl}/users/legacy-admin`);
+
+    expect(response.status).toBe(200);
+    expect(response.data.username).toBe("legacy-admin");
+    expect(response.data.roles).toEqual(["admin"]);
+    expect(response.data).not.toHaveProperty("password");
+  });
+
+  it("returns 404 when exporting an unknown user", async () => {
+    await expect(axios.get(`${baseUrl}/users/unknown-person`)).rejects.toMatchObject({
+      response: {
+        status: 404,
+        data: {
+          status: "error",
+          message: "user not found",
+        },
+      },
     });
   });
 });

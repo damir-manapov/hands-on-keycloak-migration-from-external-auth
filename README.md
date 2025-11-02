@@ -40,6 +40,8 @@ The REST service listens on `http://localhost:4000` and exposes:
 
 - `GET /health` – basic readiness probe
 - `POST /login` – accepts `{ "username": string, "password": string }` and returns a mock session token when the credentials match the in-memory users
+- `GET /users` – exports all legacy profiles (sans passwords) for syncing into Keycloak
+- `GET /users/:username` – exports a single user snapshot to support incremental migrations
 
 ## Keycloak via Docker Compose
 

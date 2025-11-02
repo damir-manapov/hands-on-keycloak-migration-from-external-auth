@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-echo "▶ Running Prettier check"
-yarn format:check
+echo "▶ Formatting code with Prettier"
+yarn format
 
 echo "▶ Running ESLint"
 yarn lint
