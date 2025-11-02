@@ -1,6 +1,14 @@
-# Keycloak Research Sandbox
+# Keycloak Migration Sandbox
 
-This project provides a minimal playground for experimenting with authenticating against a local Keycloak instance and a custom TypeScript REST facade that emulates username/password validation.
+This sandbox demonstrates how to bridge a legacy username/password authenticator with Keycloak when migrating an existing user base. Accounts are provisioned in Keycloak up-front, while credentials stay in the legacy store and are only copied to Keycloak on the user's first post-migration sign-in.
+
+## Migration Scenario
+
+- `src/server.ts` acts as the legacy authentication facade. It accepts username/password pairs, mimicking the historical system that still owns the definitive credentials.
+- Keycloak (see the `compose` directory) represents the target Identity Provider. Users exist there from day one, but the password hash is transferred when the legacy service successfully authenticates a login event.
+- The E2E tests model a "just-in-time" migration: first authenticate via the legacy facade, then exchange those credentials against Keycloak's password grant to issue modern tokens.
+
+> **Note:** For local experimentation the sample realm seeds `test-user / password` in both systems so the flows work out of the box. In a real migration you would call the Keycloak Admin API (or a custom SPI) to update the password only after the legacy system verifies the user.
 
 ## Prerequisites
 
