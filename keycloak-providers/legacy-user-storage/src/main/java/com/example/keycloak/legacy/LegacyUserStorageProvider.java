@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.credential.CredentialInput;
 import org.keycloak.credential.CredentialInputValidator;
@@ -12,6 +13,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserCredentialModel;
+import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.user.UserLookupProvider;
@@ -30,6 +32,10 @@ public class LegacyUserStorageProvider implements
     private final LegacyUserService legacyUserService;
     private final ConcurrentMap<String, LegacyUserRepresentation> cache = new ConcurrentHashMap<>();
 
+    @SuppressFBWarnings(
+        value = "EI_EXPOSE_REP2",
+        justification = "Keycloak session and component model lifecycles are managed by the Keycloak runtime"
+    )
     public LegacyUserStorageProvider(KeycloakSession session, ComponentModel model) {
         this.session = session;
         this.model = model;
@@ -70,7 +76,7 @@ public class LegacyUserStorageProvider implements
 
     @Override
     public boolean supportsCredentialType(String credentialType) {
-        return UserCredentialModel.PASSWORD.equals(credentialType);
+        return PasswordCredentialModel.TYPE.equals(credentialType);
     }
 
     @Override
@@ -102,15 +108,20 @@ public class LegacyUserStorageProvider implements
     private Optional<LegacyUserRepresentation> loadUser(String username) {
         LegacyUserRepresentation cached = cache.get(username);
         if (cached != null) {
-            return Optional.of(cached);
+            return Optional.of(copyRepresentation(cached));
         }
         Optional<LegacyUserRepresentation> fetched = legacyUserService.fetchUser(username);
-        fetched.ifPresent(user -> cache.put(user.getUsername(), user));
-        return fetched;
+        fetched.map(LegacyUserStorageProvider::copyRepresentation)
+            .ifPresent(user -> cache.put(user.getUsername(), user));
+        return fetched.map(LegacyUserStorageProvider::copyRepresentation);
     }
 
     private UserModel createAdapter(RealmModel realm, LegacyUserRepresentation representation) {
         return new LegacyUserAdapter(session, realm, model, representation);
+    }
+
+    private static LegacyUserRepresentation copyRepresentation(LegacyUserRepresentation representation) {
+        return new LegacyUserRepresentation(representation);
     }
 
     private void importUserIfNeeded(RealmModel realm, LegacyUserRepresentation representation, String password) {

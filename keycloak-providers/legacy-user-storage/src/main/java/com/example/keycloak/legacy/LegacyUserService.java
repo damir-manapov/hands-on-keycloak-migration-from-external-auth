@@ -43,22 +43,40 @@ public class LegacyUserService {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            LOGGER.infof("LegacyUserService.fetchUser %s -> %d", target, response.statusCode());
+            LOGGER.infof(
+                "LegacyUserService.fetchUser %s -> %d",
+                target,
+                response.statusCode()
+            );
 
             if (response.statusCode() == 404) {
                 return Optional.empty();
             }
 
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                LegacyUserRepresentation representation = MAPPER.readValue(response.body(), LegacyUserRepresentation.class);
-                LOGGER.infof("LegacyUserService.fetchUser loaded user %s with %d roles", representation.getUsername(), representation.getRoles().size());
+                LegacyUserRepresentation representation = MAPPER.readValue(
+                    response.body(),
+                    LegacyUserRepresentation.class
+                );
+                LOGGER.infof(
+                    "LegacyUserService.fetchUser loaded user %s with %d roles",
+                    representation.getUsername(),
+                    representation.getRoles().size()
+                );
                 return Optional.of(representation);
             }
 
-            LOGGER.warnf("Unexpected response when fetching user %s: %d %s", username, response.statusCode(), response.body());
+            LOGGER.warnf(
+                "Unexpected response when fetching user %s: %d %s",
+                username,
+                response.statusCode(),
+                response.body()
+            );
             return Optional.empty();
         } catch (IOException | InterruptedException ex) {
-            Thread.currentThread().interrupt();
+            if (ex instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             LOGGER.errorf(ex, "Failed to fetch user %s from legacy system", username);
             return Optional.empty();
         }
@@ -75,10 +93,16 @@ public class LegacyUserService {
                 .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            LOGGER.infof("LegacyUserService.validateCredentials %s -> %d", username, response.statusCode());
+            LOGGER.infof(
+                "LegacyUserService.validateCredentials %s -> %d",
+                username,
+                response.statusCode()
+            );
             return response.statusCode() == 200;
         } catch (IOException | InterruptedException ex) {
-            Thread.currentThread().interrupt();
+            if (ex instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             LOGGER.errorf(ex, "Failed to validate credentials for %s", username);
             return false;
         }

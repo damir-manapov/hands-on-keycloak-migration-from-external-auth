@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -14,9 +15,14 @@ import java.util.stream.Stream;
 public class LegacyUserAdapter extends AbstractUserAdapterFederatedStorage {
     private final LegacyUserRepresentation delegate;
 
-    public LegacyUserAdapter(KeycloakSession session, RealmModel realm, ComponentModel model, LegacyUserRepresentation delegate) {
+    public LegacyUserAdapter(
+        KeycloakSession session,
+        RealmModel realm,
+        ComponentModel model,
+        LegacyUserRepresentation delegate
+    ) {
         super(session, realm, model);
-        this.delegate = delegate;
+        this.delegate = new LegacyUserRepresentation(Objects.requireNonNull(delegate));
     }
 
     @Override
