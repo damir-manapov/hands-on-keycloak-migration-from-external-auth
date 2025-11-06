@@ -1,12 +1,19 @@
-# Keycloak Migration Sandbox
+# Keycloak Migration Reference
 
-This sandbox demonstrates how to bridge a legacy username/password authenticator with Keycloak when migrating an existing user base. Accounts are provisioned in Keycloak up-front, while credentials stay in the legacy store and are only copied to Keycloak on the user's first post-migration sign-in.
+This is a reference implementation for migrating user authorization from a legacy system to Keycloak.
 
-## Migration Scenario
+## Migration Strategy
+
+The project implements a custom Keycloak extension (User Storage Provider SPI) that intercepts authentication attempts and redirects them to the legacy system. The legacy system validates the login/password combination, and if successful, the password is saved in Keycloak. This enables a gradual password migration: passwords flow into Keycloak on each user's first successful login. Once a password is stored locally in Keycloak, subsequent authentication attempts for that user use the local database instead of querying the legacy system.
+
+Additionally, there is a bulk import script that migrates user profiles at startup without their passwords. The script temporarily disables the extension, imports user profiles from the legacy system into Keycloak, and then re-enables the extension. This allows users to be pre-provisioned in Keycloak while their passwords are migrated on-demand during their first login.
+
+## How It Works
 
 - `src/server.ts` acts as the legacy authentication facade. It accepts username/password pairs, mimicking the historical system that still owns the definitive credentials.
-- Keycloak (see the `compose` directory) represents the target Identity Provider. Users exist there from day one, but the password hash is transferred when the legacy service successfully authenticates a login event.
-- The E2E tests model a "just-in-time" migration: first authenticate via the legacy facade, then exchange those credentials against Keycloak's password grant to issue modern tokens.
+- Keycloak (see the `compose` directory) represents the target Identity Provider. The custom User Storage Provider intercepts login attempts and forwards them to the legacy system for validation.
+- On first successful authentication, the password is stored in Keycloak. Subsequent logins use the local Keycloak database.
+- The E2E tests model the migration flow: first authenticate via the legacy facade, then exchange those credentials against Keycloak's password grant to issue modern tokens.
 
 > **Note:** For local experimentation the sample realm seeds `test-user / password` in both systems so the flows work out of the box. In a real migration you would call the Keycloak Admin API (or a custom SPI) to update the password only after the legacy system verifies the user.
 
@@ -127,7 +134,7 @@ Build and copy the provider JAR:
 
 ```bash
 mvn -f keycloak-providers/legacy-user-storage/pom.xml package
-cp keycloak-providers/legacy-user-storage/target/legacy-user-storage-provider-0.1.0-SNAPSHOT.jar compose/providers/legacy-user-storage-provider.jar
+cp keycloak-providers/legacy-user-storage/target/legacy-user-storage-provider-0.1.0-SNAPSHOT.jar compose/keycloak/providers/legacy-user-storage-provider.jar
 ```
 
 Restart Keycloak (`yarn compose:restart`). Then, in the admin console:
