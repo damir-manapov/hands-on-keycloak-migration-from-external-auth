@@ -1,6 +1,6 @@
 node_modules
 dist
 .env
-compose/providers/
+*.jar
 keycloak-providers/legacy-user-storage/target/
 

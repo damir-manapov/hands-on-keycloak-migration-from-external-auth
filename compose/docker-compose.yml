@@ -11,8 +11,11 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
-      - ./providers/legacy-user-storage-provider.jar:/opt/keycloak/providers/legacy-user-storage-provider.jar:ro
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      # Uncomment after building/copying the provider JAR:
+      # mvn -f keycloak-providers/legacy-user-storage/pom.xml package
+      # cp keycloak-providers/legacy-user-storage/target/legacy-user-storage-provider-0.1.0-SNAPSHOT.jar compose/keycloak/providers/legacy-user-storage-provider.jar
+      - ./keycloak/providers/legacy-user-storage-provider.jar:/opt/keycloak/providers/legacy-user-storage-provider.jar:ro
     healthcheck:
       test:
         - CMD-SHELL
@@ -30,4 +33,48 @@ services:
     entrypoint:
       - /bin/sh
       - -c
-      - echo "Keycloak is healthy and ready for migration tests."
+      - |
+        cat <<'EOF'
+        
+        Keycloak is healthy and ready for migration tests.
+        
+        How to connect and authorize with running services:
+        
+        [Keycloak]
+        - URL: http://localhost:8080/
+        - Realm: research
+        - Admin Console: http://localhost:8080/
+          Admin credentials: admin / admin
+        - Health: http://localhost:8080/health/ready
+        
+        [Users]
+        - Test user: test-user / password
+        
+        [OIDC Client]
+        - Client ID: research-migration-from-legacy (public)
+        - Redirect URIs: http://localhost:4000/*
+        - Web origins: *
+        
+        [Authorize in browser]
+        - Start login: http://localhost:8080/realms/research/protocol/openid-connect/auth?client_id=research-migration-from-legacy&redirect_uri=http%3A%2F%2Flocalhost%3A4000%2F&response_type=code
+        
+        [Password grant (Direct Access Grants)]
+        - Token endpoint: http://localhost:8080/realms/research/protocol/openid-connect/token
+        - Example:
+          curl -X POST \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            -d 'grant_type=password' \
+            -d 'client_id=research-migration-from-legacy' \
+            -d 'username=test-user' \
+            -d 'password=password' \
+            'http://localhost:8080/realms/research/protocol/openid-connect/token'
+        
+        [Helper script]
+        - From project root:
+          ./scripts/keycloak-login.sh test-user password
+        
+        [Legacy service expected by provider]
+        - External base URL: http://localhost:4000/
+        - From inside Keycloak container: http://host.docker.internal:4000/
+        
+        EOF
